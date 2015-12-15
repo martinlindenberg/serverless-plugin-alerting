@@ -14,6 +14,7 @@ This Plugin adds Cloudwatch Alarms with SMS notifications for your Lambda functi
 ]
 ```
 * place the alerting.json file next to your s-function.json file right in the functions folder
+
 Example file:
 ```
 {
@@ -59,6 +60,9 @@ Example file:
 
 ```
 * Notification-Topics:
+
 ** Here you can set a SNS Topic that receives Messages, if a metric triggers an alarm.
+
 ** you can attach another lambda function to the SNS-Topic to do anything on these alarms.
+
 For example Push a notification to a messaging system like slack, send a email or push data to any Rest-Api.
