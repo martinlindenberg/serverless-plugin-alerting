@@ -62,6 +62,11 @@ Example file alerting.json:
     }
 }
 
+### Run the Plugin
+
+ - the plugin uses a hook that is called after each deployment of a function
+ - it searches in the functions folder for the alerting.json file and adds the configured alerts
+
 ```
 ### Notification-Topics:
 
