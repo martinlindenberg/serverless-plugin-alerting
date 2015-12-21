@@ -50,6 +50,6 @@ git clone https://github.com/martinlindenberg/serverless-plugin-alerting.git
 
 #### Alerts
 
- - each alert has its used metric as key
+ - key: name of the metric that needs to be checked
  - the values were used to fill up a aws-cli command
  - http://docs.aws.amazon.com/cli/latest/reference/cloudwatch/put-metric-alarm.html
