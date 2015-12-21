@@ -12,7 +12,7 @@ This Plugin adds Cloudwatch Alarms with SNS notifications for your Lambda functi
  - install this plugin to your projects plugins folder
  ```
 cd projectfolder/plugins/
-git clone git@github.com:martinlindenberg/serverless-plugin-alerting.git
+git clone https://github.com/martinlindenberg/serverless-plugin-alerting.git
  ```
 
  - install projects dependencies
