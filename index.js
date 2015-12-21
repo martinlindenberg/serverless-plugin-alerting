@@ -1,10 +1,9 @@
 'use strict';
 
-module.exports = function(serverlessPath) {
+module.exports = function(SPlugin) {
 
     const path     = require('path'),
         fs         = require('fs'),
-        SPlugin    = require(path.join(serverlessPath, 'ServerlessPlugin')),// You can access modules in Serverless by following this convention.
         BbPromise  = require('bluebird'); // Serverles uses Bluebird Promises and we recommend you do to because they are super helpful :)
 
     class ServerlessPluginAlerting extends SPlugin {
@@ -29,7 +28,6 @@ module.exports = function(serverlessPath) {
             let _this = this;
 
             return new BbPromise(function (resolve, reject) {
-
                 if (_this.S.cli.context != 'function' || _this.S.cli.contextAction != 'deploy') {
                     return;
                 }
@@ -37,7 +35,7 @@ module.exports = function(serverlessPath) {
                 // candidate for function
                 for (var i in evt.functions) {
                     var fn = evt.functions[i];
-                    var alertPathFile = fn.pathFunction.replace('s-function.json', 'alerting.json');
+                    var alertPathFile = _this.S._projectRootPath + '/' + fn.pathFunction +  '/alerting.json';
 
                     if (!fs.existsSync(alertPathFile)) {
                         continue;

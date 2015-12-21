@@ -1,0 +1,36 @@
+{
+  "name": "serverless-plugin-alerting",
+  "version": "0.0.2",
+  "engines": {
+    "node": ">=4.0"
+  },
+  "description": "Serverless Alerting Plugin.",
+  "author": "https://github.com/martinlindenberg/",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/martinlindenberg/serverless-plugin-alerting"
+  },
+  "keywords": [
+    "serverless plugin alerting",
+    "serverless framework plugin",
+    "serverless applications",
+    "serverless plugins",
+    "api gateway",
+    "lambda",
+    "cloudwatch alerts",
+    "aws",
+    "aws lambda",
+    "amazon",
+    "amazon web services"
+  ],
+  "main": "index.js",
+  "bin": {},
+  "scripts": {
+  },
+  "devDependencies": {
+  },
+  "dependencies": {
+    "bluebird": "^3.0.6"
+  }
+}
