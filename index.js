@@ -20,6 +20,10 @@ module.exports = function(SPlugin) {
                 action: 'functionDeploy',
                 event:  'post'
             });
+            this.S.addHook(this._addAlertsAfterDeploy.bind(this), {
+                action: 'dashDeploy',
+                event:  'post'
+            });
 
             return Promise.resolve();
         }
@@ -28,7 +32,11 @@ module.exports = function(SPlugin) {
             let _this = this;
 
             return new BbPromise(function (resolve, reject) {
-                if (_this.S.cli.context != 'function' || _this.S.cli.contextAction != 'deploy') {
+                if (_this.S.cli.contextAction != 'deploy') {
+                    return;
+                }
+
+                if (_this.S.cli.context != 'function' && _this.S.cli.context != 'dash') {
                     return;
                 }
 
