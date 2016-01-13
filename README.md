@@ -43,10 +43,18 @@ git clone https://github.com/martinlindenberg/serverless-plugin-alerting.git
 
 ### alerting.json
 
+#### Structure
+ - array of alerting definition objects (previous version: single alerting definition object still works)
+ - you can add multiple alerts as an array of alerting-objects
+ - the second alerting object can be removed, if not required
+ - use-case:
+    - alert1: submit normal notifications immediately to instant messenger (Example: Threshold: Errors >= 1 for 1 minute)
+    - alert2: submit notification to statuspage of your service to notify the customers about a problem (Example: Threshold: Duration >= 500 for 5 minutes)
+
 #### Notification-Topics
 
  - Here you have to define a mapping between a staging environment name and a SNS Topic that receives Messages
- - this plugin only adds alerts if there is a stage to SNS-Topic mapping
+ - *this plugin only adds alerts if there is a stage to SNS-Topic mapping*
  - What to do next:
     - As soon as these alerts have been created, they automatically submit notifications to these SNS-Topics
     - If you want to react on these alarms you can subscribe Lambda-Functions to these Topics
@@ -57,10 +65,3 @@ git clone https://github.com/martinlindenberg/serverless-plugin-alerting.git
  - key: name of the metric that needs to be checked
  - the values were used to fill up a aws-cli command
  - http://docs.aws.amazon.com/cli/latest/reference/cloudwatch/put-metric-alarm.html
-
- ### alerting.multiple.json
-
- - you can add multiple alerts as an array of alerting-objects
- - use-case:
-    - alert1: submit normal notifications immediately to instant messenger (Example: Threshold: Errors >= 1 for 1 minute)
-    - alert2: submit notification to statuspage of your service to notify the customers about a problem (Example: Threshold: Duration >= 500 for 5 minutes)
