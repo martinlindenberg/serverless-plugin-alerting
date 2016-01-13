@@ -50,25 +50,39 @@ module.exports = function(SPlugin) {
                     }
 
                     try {
-                        var alertContent = JSON.parse(fs.readFileSync(alertPathFile));
+                        var alertContents = JSON.parse(fs.readFileSync(alertPathFile));
+
+                        if (!alertContents.length > 0) {
+                            alertContents = [alertContents];
+                        }
                     } catch (e) {
                         console.log('alerting.json not readable');
                         continue;
                     }
 
                     var functionName = _this._getFunctionNameByArn(fn.deployedAliasArn, fn.deployedAlias);
-                    console.log('SERVERLESS-PLUGIN-ALERTING: adding alerts to ' + functionName);
+                    console.log('SERVERLESS-PLUGIN-ALERTING: adding alerts to ' + functionName + ':' + fn.deployedAlias);
 
-                    _this._setNotificationActionByArn(
-                        fn.deployedAliasArn,
-                        alertContent.notificationTopicStageMapping,
-                        fn.deployedAlias
-                    );
+                    for (var i in alertContents) {
+                        var alertContent = alertContents[i];
 
-                    for (var metricname in alertContent.alerts) {
-                        exec(_this._getConfigAlarm(functionName, metricname, alertContent.alerts[metricname], fn.deployedAlias), function () {
-                            console.log('alarm added');
-                        });
+                        // only if there is a sns topic
+                        if (!alertContent.notificationTopicStageMapping[fn.deployedAlias]) {
+                            continue;
+                        }
+
+                        _this._setNotificationActionByArn(
+                            fn.deployedAliasArn,
+                            alertContent.notificationTopicStageMapping,
+                            fn.deployedAlias
+                        );
+
+                        for (var metricname in alertContent.alerts) {
+                            var topicName = alertContent.notificationTopicStageMapping[fn.deployedAlias];
+                            exec(_this._getConfigAlarm(functionName, metricname, alertContent.alerts[metricname], fn.deployedAlias, topicName), function () {
+                                console.log('alarm added');
+                            });
+                        }
                     }
                 }
 
@@ -89,11 +103,11 @@ module.exports = function(SPlugin) {
             _this._notificationAction = name + ':' + map[stage];
         }
 
-        _getConfigAlarm(functionName, metric, alertConfig, stage) {
+        _getConfigAlarm(functionName, metric, alertConfig, stage, topicName) {
             let _this = this;
 
             return _this._getPutMetricAlarmCmd({
-                'alarmName': functionName + ':' + stage + ' ' + metric,
+                'alarmName': functionName + ':' + stage + ' ' + metric + ' -> ' + topicName,
                 'alarmDescription': alertConfig.description,
                 'metricName': metric,
                 'alarmNamespace': alertConfig.alarmNamespace,
