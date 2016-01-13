@@ -66,7 +66,7 @@ module.exports = function(SPlugin) {
                     );
 
                     for (var metricname in alertContent.alerts) {
-                        exec(_this._getConfigAlarm(functionName, metricname, alertContent.alerts[metricname]), function () {
+                        exec(_this._getConfigAlarm(functionName, metricname, alertContent.alerts[metricname], fn.deployedAlias), function () {
                             console.log('alarm added');
                         });
                     }
@@ -89,11 +89,11 @@ module.exports = function(SPlugin) {
             _this._notificationAction = name + ':' + map[stage];
         }
 
-        _getConfigAlarm(functionName, metric, alertConfig) {
+        _getConfigAlarm(functionName, metric, alertConfig, stage) {
             let _this = this;
 
             return _this._getPutMetricAlarmCmd({
-                'alarmName': functionName + ' ' + metric,
+                'alarmName': functionName + ':' + stage + ' ' + metric,
                 'alarmDescription': alertConfig.description,
                 'metricName': metric,
                 'alarmNamespace': alertConfig.alarmNamespace,
@@ -102,6 +102,7 @@ module.exports = function(SPlugin) {
                 'alarmThreshold': alertConfig.alarmThreshold,
                 'comparisonOperator': alertConfig.comparisonOperator,
                 'functionName': functionName,
+                'resource': functionName + ':' + stage,
                 'evaluationPeriod': alertConfig.evaluationPeriod,
                 'notificationAction': _this._notificationAction
             });
@@ -117,6 +118,7 @@ module.exports = function(SPlugin) {
             addCommand += ' --period ' + config.alarmPeriod + ' ';
             addCommand += ' --threshold ' + config.alarmThreshold + ' ';
             addCommand += ' --comparison-operator ' + config.comparisonOperator + ' ';
+            addCommand += ' --dimensions  Name=Resource,Value=' + config.resource + ' ';
             addCommand += ' --dimensions  Name=FunctionName,Value=' + config.functionName + ' ';
             addCommand += ' --evaluation-periods ' + config.evaluationPeriod + ' ';
             addCommand += ' --alarm-actions ' + config.notificationAction + ' ';
