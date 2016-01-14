@@ -132,8 +132,7 @@ module.exports = function(SPlugin) {
             addCommand += ' --period ' + config.alarmPeriod + ' ';
             addCommand += ' --threshold ' + config.alarmThreshold + ' ';
             addCommand += ' --comparison-operator ' + config.comparisonOperator + ' ';
-            addCommand += ' --dimensions  Name=Resource,Value=' + config.resource + ' ';
-            addCommand += ' --dimensions  Name=FunctionName,Value=' + config.functionName + ' ';
+            addCommand += ' --dimensions \'[{"Name":"Resource","Value":"' + config.resource + '"},{"Name":"FunctionName","Value":"' + config.functionName + '"}]\' ';
             addCommand += ' --evaluation-periods ' + config.evaluationPeriod + ' ';
             addCommand += ' --alarm-actions ' + config.notificationAction + ' ';
             addCommand += ' --ok-actions ' + config.notificationAction + ' ';
