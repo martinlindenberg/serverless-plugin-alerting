@@ -2,13 +2,14 @@
 
 module.exports = function(SPlugin) {
 
-    const path     = require('path'),
+    const AWS      = require('aws-sdk'),
+        path       = require('path'),
         fs         = require('fs'),
-        BbPromise  = require('bluebird'); // Serverles uses Bluebird Promises and we recommend you do to because they are super helpful :)
+        BbPromise  = require('bluebird'); // Serverless uses Bluebird Promises and we recommend you do to because they provide more than your average Promise :)
 
     class ServerlessPluginAlerting extends SPlugin {
-        constructor(S, config) {
-            super(S, config);
+        constructor(S) {
+            super(S);
         }
 
         static getName() {
@@ -25,25 +26,37 @@ module.exports = function(SPlugin) {
                 event:  'post'
             });
 
-            return Promise.resolve();
+            return BbPromise.resolve();
         }
 
         _addAlertsAfterDeploy(evt) {
             let _this = this;
 
-            return new BbPromise(function (resolve, reject) {
-                if (_this.S.cli.contextAction != 'deploy') {
-                    return;
-                }
+            return new BbPromise(function(resolve, reject) {
+                for(var region in evt.data.deployed)
+                    _this._addAlertAfterDeployForRegion(evt, region);
 
-                if (_this.S.cli.context != 'function' && _this.S.cli.context != 'dash') {
+                return resolve(evt);
+            });
+        }
+
+        _addAlertAfterDeployForRegion(evt, region) {
+            let _this = this,
+                cloudWatch = new AWS.CloudWatch({
+                    region: region,
+                    accessKeyId: this.S.config.awsAdminKeyId,
+                    secretAccessKey: this.S.config.awsAdminSecretKey
+                }),
+                stage = evt.options.stage;
+
+            return new BbPromise(function (resolve, reject) {
+                if (_this.S.cli.action != 'deploy' || (_this.S.cli.context != 'function' && _this.S.cli.context != 'dash'))
                     return;
-                }
 
                 // candidate for function
-                for (var i in evt.functions) {
-                    var fn = evt.functions[i];
-                    var alertPathFile = _this.S._projectRootPath + '/' + fn.pathFunction +  '/alerting.json';
+                for (var deployedIndex in evt.data.deployed[region]) {
+                    let deployed = evt.data.deployed[region][deployedIndex],
+                        alertPathFile = _this.S.config.projectPath + '/' + deployed.component + '/' + deployed.module + '/' + deployed.function + '/alerting.json';
 
                     if (!fs.existsSync(alertPathFile)) {
                         continue;
@@ -60,88 +73,70 @@ module.exports = function(SPlugin) {
                         continue;
                     }
 
-                    var functionName = _this._getFunctionNameByArn(fn.deployedAliasArn, fn.deployedAlias);
-                    console.log('SERVERLESS-PLUGIN-ALERTING: adding alerts to ' + functionName + ':' + fn.deployedAlias);
+                    var functionName = _this._getFunctionNameByArn(deployed.Arn, stage);
+                    console.log('SERVERLESS-PLUGIN-ALERTING: adding alerts to ' + functionName + ':' + stage);
 
                     for (var i in alertContents) {
                         var alertContent = alertContents[i];
 
                         // only if there is a sns topic
-                        if (!alertContent.notificationTopicStageMapping[fn.deployedAlias]) {
+                        if (!alertContent.notificationTopicStageMapping[stage]) {
                             continue;
                         }
 
                         _this._setNotificationActionByArn(
-                            fn.deployedAliasArn,
+                            deployed.Arn,
                             alertContent.notificationTopicStageMapping,
-                            fn.deployedAlias
+                            stage
                         );
 
                         for (var metricname in alertContent.alerts) {
-                            var topicName = alertContent.notificationTopicStageMapping[fn.deployedAlias];
-                            exec(_this._getConfigAlarm(functionName, metricname, alertContent.alerts[metricname], fn.deployedAlias, topicName), function () {
-                                console.log('alarm added');
+                            var topicName = alertContent.notificationTopicStageMapping[stage];
+                            cloudWatch.putMetricAlarm(_this._getAlarmConfig(functionName, metricname, alertContent.alerts[metricname], stage, topicName), function(err, data) {
+                                if(err) {
+                                    console.log(err);
+                                    console.log(err.stack);
+                                }
                             });
                         }
                     }
                 }
 
-                return resolve(evt);
+                return resolve(evt, region);
             });
         }
 
         _getFunctionNameByArn(arn, stage) {
-            var name = arn.split(':function:');
-            return name[1].replace(':' + stage, '');
+            return arn.split(':function:')[1].replace(':' + stage, '');
         }
 
         _setNotificationActionByArn(arn, map, stage) {
-            let _this = this;
-
-            var name = arn.split(':function:');
-            name = name[0].replace(':lambda:', ':sns:');
-            _this._notificationAction = name + ':' + map[stage];
+            var name = arn.split(':function:')[0].replace(':lambda:', ':sns:');
+            this._notificationAction = name + ':' + map[stage];
         }
 
-        _getConfigAlarm(functionName, metric, alertConfig, stage, topicName) {
-            let _this = this;
+        _getAlarmConfig(functionName, metric, alertConfig, stage, topicName) {
+            let resourceName = functionName + ":" + stage;
 
-            return _this._getPutMetricAlarmCmd({
-                'alarmName': functionName + ':' + stage + ' ' + metric + ' -> ' + topicName,
-                'alarmDescription': alertConfig.description,
-                'metricName': metric,
-                'alarmNamespace': alertConfig.alarmNamespace,
-                'alarmStatisticType': alertConfig.alarmStatisticType,
-                'alarmPeriod': alertConfig.alarmPeriod,
-                'alarmThreshold': alertConfig.alarmThreshold,
-                'comparisonOperator': alertConfig.comparisonOperator,
-                'functionName': functionName,
-                'resource': functionName + ':' + stage,
-                'evaluationPeriod': alertConfig.evaluationPeriod,
-                'notificationAction': _this._notificationAction
-            });
+            return {
+                AlarmName: resourceName + ' ' + metric + ' -> ' + topicName,
+                ComparisonOperator: alertConfig.comparisonOperator,
+                EvaluationPeriods: alertConfig.evaluationPeriod,
+                MetricName: metric,
+                Namespace: alertConfig.alarmNamespace,
+                Period: alertConfig.alarmPeriod,
+                Statistic: alertConfig.alarmStatisticType,
+                Threshold: alertConfig.alarmThreshold,
+                AlarmDescription: alertConfig.description,
+                Dimensions: [
+                    { Name: "Resource", Value: resourceName },
+                    { Name: "FunctionName", Value: functionName }
+                ],
+                InsufficientDataActions: [this._notificationAction],
+                OKActions: [this._notificationAction]
+            };
         }
-
-        _getPutMetricAlarmCmd(config) {
-            var addCommand = 'aws cloudwatch put-metric-alarm ';
-            addCommand += ' --alarm-name "' + config.alarmName + '" ';
-            addCommand += ' --alarm-description "' + config.alarmDescription + '" ';
-            addCommand += ' --metric-name ' + config.metricName + ' ';
-            addCommand += ' --namespace "' + config.alarmNamespace + '" ';
-            addCommand += ' --statistic ' + config.alarmStatisticType + ' ';
-            addCommand += ' --period ' + config.alarmPeriod + ' ';
-            addCommand += ' --threshold ' + config.alarmThreshold + ' ';
-            addCommand += ' --comparison-operator ' + config.comparisonOperator + ' ';
-            addCommand += ' --dimensions \'[{"Name":"Resource","Value":"' + config.resource + '"},{"Name":"FunctionName","Value":"' + config.functionName + '"}]\' ';
-            addCommand += ' --evaluation-periods ' + config.evaluationPeriod + ' ';
-            addCommand += ' --alarm-actions ' + config.notificationAction + ' ';
-            addCommand += ' --ok-actions ' + config.notificationAction + ' ';
-            addCommand += ' --insufficient-data-actions ' + config.notificationAction + ' ';
-
-            return addCommand;
-        };
     }
 
     return ServerlessPluginAlerting;
-
 };
