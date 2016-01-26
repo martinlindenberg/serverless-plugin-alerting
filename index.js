@@ -5,11 +5,11 @@ module.exports = function(SPlugin) {
     const AWS      = require('aws-sdk'),
         path       = require('path'),
         fs         = require('fs'),
-        BbPromise  = require('bluebird'); // Serverless uses Bluebird Promises and we recommend you do to because they are super helpful :)
+        BbPromise  = require('bluebird'); // Serverless uses Bluebird Promises and we recommend you do to because they provide more than your average Promise :)
 
     class ServerlessPluginAlerting extends SPlugin {
-        constructor(S, config) {
-            super(S, config);
+        constructor(S) {
+            super(S);
         }
 
         static getName() {
@@ -26,36 +26,37 @@ module.exports = function(SPlugin) {
                 event:  'post'
             });
 
-            return Promise.resolve();
+            return BbPromise.resolve();
         }
 
         _addAlertsAfterDeploy(evt) {
-            var regionIndex;
-            for(regionIndex in evt.regions)
-                this._addAlertAfterDeployForRegion(evt, evt.regions[regionIndex]);
+            let _this = this;
+
+            return new BbPromise(function(resolve, reject) {
+                for(var region in evt.data.deployed)
+                    _this._addAlertAfterDeployForRegion(evt, region);
+
+                return resolve(evt);
+            });
         }
 
         _addAlertAfterDeployForRegion(evt, region) {
             let _this = this,
                 cloudWatch = new AWS.CloudWatch({
                     region: region,
-                    accessKeyId: this.S._awsAdminKeyId,
-                    secretAccessKey: this.S._awsAdminSecretKey
-                });
+                    accessKeyId: this.S.config.awsAdminKeyId,
+                    secretAccessKey: this.S.config.awsAdminSecretKey
+                }),
+                stage = evt.options.stage;
 
             return new BbPromise(function (resolve, reject) {
-                if (_this.S.cli.contextAction != 'deploy') {
+                if (_this.S.cli.action != 'deploy' || (_this.S.cli.context != 'function' && _this.S.cli.context != 'dash'))
                     return;
-                }
-
-                if (_this.S.cli.context != 'function' && _this.S.cli.context != 'dash') {
-                    return;
-                }
 
                 // candidate for function
-                for (var i in evt.functions) {
-                    var fn = evt.functions[i];
-                    var alertPathFile = _this.S._projectRootPath + '/' + fn.pathFunction +  '/alerting.json';
+                for (var deployedIndex in evt.data.deployed[region]) {
+                    let deployed = evt.data.deployed[region][deployedIndex],
+                        alertPathFile = _this.S.config.projectPath + '/' + deployed.component + '/' + deployed.module + '/' + deployed.function + '/alerting.json';
 
                     if (!fs.existsSync(alertPathFile)) {
                         continue;
@@ -72,26 +73,26 @@ module.exports = function(SPlugin) {
                         continue;
                     }
 
-                    var functionName = _this._getFunctionNameByArn(fn.deployedAliasArn, fn.deployedAlias);
-                    console.log('SERVERLESS-PLUGIN-ALERTING: adding alerts to ' + functionName + ':' + fn.deployedAlias);
+                    var functionName = _this._getFunctionNameByArn(deployed.Arn, stage);
+                    console.log('SERVERLESS-PLUGIN-ALERTING: adding alerts to ' + functionName + ':' + stage);
 
                     for (var i in alertContents) {
                         var alertContent = alertContents[i];
 
                         // only if there is a sns topic
-                        if (!alertContent.notificationTopicStageMapping[fn.deployedAlias]) {
+                        if (!alertContent.notificationTopicStageMapping[stage]) {
                             continue;
                         }
 
                         _this._setNotificationActionByArn(
-                            fn.deployedAliasArn,
+                            deployed.Arn,
                             alertContent.notificationTopicStageMapping,
-                            fn.deployedAlias
+                            stage
                         );
 
                         for (var metricname in alertContent.alerts) {
-                            var topicName = alertContent.notificationTopicStageMapping[fn.deployedAlias];
-                            cloudWatch.putMetricAlarm(_this._getAlarmConfig(functionName, metricname, alertContent.alerts[metricname], fn.deployedAlias, topicName), function(err, data) {
+                            var topicName = alertContent.notificationTopicStageMapping[stage];
+                            cloudWatch.putMetricAlarm(_this._getAlarmConfig(functionName, metricname, alertContent.alerts[metricname], stage, topicName), function(err, data) {
                                 if(err) {
                                     console.log(err);
                                     console.log(err.stack);
@@ -101,21 +102,17 @@ module.exports = function(SPlugin) {
                     }
                 }
 
-                return resolve(evt);
+                return resolve(evt, region);
             });
         }
 
         _getFunctionNameByArn(arn, stage) {
-            var name = arn.split(':function:');
-            return name[1].replace(':' + stage, '');
+            return arn.split(':function:')[1].replace(':' + stage, '');
         }
 
         _setNotificationActionByArn(arn, map, stage) {
-            let _this = this;
-
-            var name = arn.split(':function:');
-            name = name[0].replace(':lambda:', ':sns:');
-            _this._notificationAction = name + ':' + map[stage];
+            var name = arn.split(':function:')[0].replace(':lambda:', ':sns:');
+            this._notificationAction = name + ':' + map[stage];
         }
 
         _getAlarmConfig(functionName, metric, alertConfig, stage, topicName) {
@@ -142,5 +139,4 @@ module.exports = function(SPlugin) {
     }
 
     return ServerlessPluginAlerting;
-
 };
