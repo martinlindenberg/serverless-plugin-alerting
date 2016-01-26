@@ -3,6 +3,8 @@ Serverless Plugin ALERTING
 
 This Plugin adds Cloudwatch Alarms with SNS notifications for your Lambda functions.
 
+*Note*: This plugin is supported for Serverless 0.1.* only
+
 ### Installation
 
  - make sure that aws and serverless are installed
@@ -10,36 +12,32 @@ This Plugin adds Cloudwatch Alarms with SNS notifications for your Lambda functi
  - @see http://www.serverless.com/
 
  - install this plugin to your projects plugins folder
- ```
-cd projectfolder/plugins/
+
+```cd projectfolder/plugins/
 git clone https://github.com/martinlindenberg/serverless-plugin-alerting.git
- ```
+```
 
  - install projects dependencies
- ```
- cd projectfolder/plugins/serverless-plugin-alerting
- npm update
- ```
+
+```cd projectfolder/plugins/
+npm install serverless-plugin-alerting --prefix=. --save
+```
 
  - add the plugin to your s-project.json file
 
-```
-"plugins": [
-    {
-      "path": "serverless-plugin-alerting"
-    }
+```"plugins": [
+  "path": "serverless-plugin-alerting"
 ]
 ```
 
- - place the alerting.json file next to your s-function.json file right in the functions folder
+ - place the alerting.json file next to your s-function.json in the directory of the function for which you want to configure alerting
  - feel free to modify it as required
 
 ### Run the Plugin
 
  - the plugin uses a hook that is called after each deployment of a function
  - you only have to deploy your function as usual
- - it searches in the functions folder for the alerting.json file and adds the configured alerts
-
+ - it searches in the function folder for the alerting.json file and adds the configured alerts
 
 ### alerting.json
 
