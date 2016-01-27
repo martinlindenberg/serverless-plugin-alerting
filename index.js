@@ -42,12 +42,13 @@ module.exports = function(SPlugin) {
 
         _addAlertAfterDeployForRegion(evt, region) {
             let _this = this,
-                cloudWatch = new AWS.CloudWatch({
-                    region: region,
-                    accessKeyId: this.S.config.awsAdminKeyId,
-                    secretAccessKey: this.S.config.awsAdminSecretKey
-                }),
-                stage = evt.options.stage;
+            cloudWatch = new AWS.CloudWatch({
+                region: region,
+                accessKeyId: this.S.config.awsAdminKeyId,
+                secretAccessKey: this.S.config.awsAdminSecretKey
+            });
+
+            _this.stage = evt.options.stage;
 
             return new BbPromise(function (resolve, reject) {
                 if (_this.S.cli.action != 'deploy' || (_this.S.cli.context != 'function' && _this.S.cli.context != 'dash'))
@@ -73,37 +74,45 @@ module.exports = function(SPlugin) {
                         continue;
                     }
 
-                    var functionName = _this._getFunctionNameByArn(deployed.Arn, stage);
-                    console.log('SERVERLESS-PLUGIN-ALERTING: adding alerts to ' + functionName + ':' + stage);
+                    var functionName = _this._getFunctionNameByArn(deployed.Arn, _this.stage);
+                    console.log('SERVERLESS-PLUGIN-ALERTING: adding alerts to ' + functionName + ':' + _this.stage);
 
                     for (var i in alertContents) {
                         var alertContent = alertContents[i];
 
                         // only if there is a sns topic
-                        if (!alertContent.notificationTopicStageMapping[stage]) {
+                        if (!alertContent.notificationTopicStageMapping[_this.stage]) {
                             continue;
                         }
 
                         _this._setNotificationActionByArn(
                             deployed.Arn,
                             alertContent.notificationTopicStageMapping,
-                            stage
+                            _this.stage
                         );
 
                         for (var metricname in alertContent.alerts) {
-                            var topicName = alertContent.notificationTopicStageMapping[stage];
-                            cloudWatch.putMetricAlarm(_this._getAlarmConfig(functionName, metricname, alertContent.alerts[metricname], stage, topicName), function(err, data) {
-                                if(err) {
-                                    console.log(err);
-                                    console.log(err.stack);
+                            var topicName = alertContent.notificationTopicStageMapping[_this.stage];
+                            cloudWatch.putMetricAlarm(
+                                _this._getAlarmConfig(functionName, metricname, alertContent.alerts[metricname], _this.stage, topicName), 
+                                function(err, data) {
+                                    if(err) {
+                                        console.log(err);
+                                        console.log(err.stack);
+                                    }
                                 }
-                            });
+                            );
                         }
+                        
                     }
                 }
 
                 return resolve(evt, region);
             });
+        }
+
+        _createSnsTopic(sns, topicName, callback) {
+            callback();
         }
 
         _getFunctionNameByArn(arn, stage) {
