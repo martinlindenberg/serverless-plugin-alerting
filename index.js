@@ -111,10 +111,6 @@ module.exports = function(SPlugin) {
             });
         }
 
-        _createSnsTopic(sns, topicName, callback) {
-            callback();
-        }
-
         _getFunctionNameByArn(arn, stage) {
             return arn.split(':function:')[1].replace(':' + stage, '');
         }
