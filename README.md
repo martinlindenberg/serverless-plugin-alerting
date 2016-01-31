@@ -79,7 +79,7 @@ npm install serverless-plugin-alerting --prefix=. --save
  - Here you have to define a mapping between a staging environment name and a SNS Topic that receives Messages
  - make sure that the staging environment exists: `sls env list`
  - create the stages, if required: `sls stage create`
- - The mapped SNS Topics need to be created manually if they don't exist
+ - The mapped SNS Topics will be created automatically if they don't exist
  - What to do next:
     - As soon as these alerts have been created, they automatically submit notifications to these SNS-Topics
     - If you want to react on these alarms you can subscribe Lambda-Functions to these Topics
