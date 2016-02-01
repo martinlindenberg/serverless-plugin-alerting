@@ -78,6 +78,7 @@ git checkout tags/0.0.15 -b 0.0.15
     - As soon as these alerts have been created, they automatically submit notifications to these SNS-Topics
     - If you want to react on these alarms you can subscribe Lambda-Functions to these Topics
     (For example Push a notification to a messaging system like slack, send a email or push data to any Rest-Api.)
+    - @see https://github.com/martinlindenberg/serverless-plugin-sns :)
 
 #### Alerts
 
