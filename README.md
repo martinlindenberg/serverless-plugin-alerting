@@ -1,6 +1,8 @@
 Serverless Plugin ALERTING
 ==========================
 
+[![NPM](https://nodei.co/npm/serverless-plugin-alerting.png?downloads=true)](https://nodei.co/npm/serverless-plugin-alerting/)
+
 This Plugin adds Cloudwatch Alarms with SNS notifications for your Lambda functions.
 
 *Note*: This plugin supports Serverless 0.1.* and 0.2.* 
