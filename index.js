@@ -247,7 +247,7 @@ module.exports = function(SPlugin) {
             var settings = [];
             for (var deployedIndex in evt.data.deployed[region]) {
                 let deployed = evt.data.deployed[region][deployedIndex],
-                    alertPathFile = _this.S.config.projectPath + '/' + deployed.component + '/' + deployed.module + '/' + deployed.function + '/alerting.json';
+                    alertPathFile = _this.S.config.projectPath + '/' + deployed.sPath + '/alerting.json';
 
                 if (!fs.existsSync(alertPathFile)) {
                     continue;
