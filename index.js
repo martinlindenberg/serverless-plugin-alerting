@@ -60,6 +60,7 @@ module.exports = function(S) {
         _manageAlerts (evt, region) {
             let _this = this;
 
+
             _this.stage = evt.options.stage;
             _this._initAws(region);
 
@@ -101,6 +102,7 @@ module.exports = function(S) {
          * @return array
          */
         _createAlerts (functionAlertSettings, _this) {
+
             var alertActions = [];
 
             for (var i in functionAlertSettings) {
@@ -188,18 +190,19 @@ module.exports = function(S) {
          * @return void
          */
         _initAws (region) {
-            let _this = this;
+            let _this = this,
+                credentials = S.getProvider('aws').getCredentials(_this.stage, region);
 
             _this.cloudWatch = new AWS.CloudWatch({
                 region: region,
-                accessKeyId: S.config.awsAdminKeyId,
-                secretAccessKey: S.config.awsAdminSecretKey
+                accessKeyId: credentials.accessKeyId,
+                secretAccessKey: credentials.secretAccessKey
             });
 
             _this.sns = new AWS.SNS({
                 region: region,
-                accessKeyId: S.config.awsAdminKeyId,
-                secretAccessKey: S.config.awsAdminSecretKey
+                accessKeyId: credentials.accessKeyId,
+                secretAccessKey: credentials.secretAccessKey
             });
 
             BbPromise.promisifyAll(_this.cloudWatch);
