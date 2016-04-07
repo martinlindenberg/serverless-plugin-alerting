@@ -1,13 +1,13 @@
 'use strict';
 
-module.exports = function(SPlugin) {
+module.exports = function(S) {
 
     const AWS      = require('aws-sdk'),
-        path       = require('path'),
+        SCli       = require(S.getServerlessPath('utils/cli')),
         fs         = require('fs'),
         BbPromise  = require('bluebird'); // Serverless uses Bluebird Promises and we recommend you do to because they provide more than your average Promise :)
 
-    class ServerlessPluginAlerting extends SPlugin {
+    class ServerlessPluginAlerting extends S.classes.Plugin {
         constructor(S) {
             super(S);
         }
@@ -17,11 +17,12 @@ module.exports = function(SPlugin) {
         }
 
         registerHooks() {
-            this.S.addHook(this._addAlertsAfterDeploy.bind(this), {
+
+            S.addHook(this._addAlertsAfterDeploy.bind(this), {
                 action: 'functionDeploy',
                 event:  'post'
             });
-            this.S.addHook(this._addAlertsAfterDeploy.bind(this), {
+            S.addHook(this._addAlertsAfterDeploy.bind(this), {
                 action: 'dashDeploy',
                 event:  'post'
             });
@@ -62,7 +63,7 @@ module.exports = function(SPlugin) {
             _this.stage = evt.options.stage;
             _this._initAws(region);
 
-            if (_this.S.cli.action != 'deploy' || (_this.S.cli.context != 'function' && _this.S.cli.context != 'dash'))
+            if (S.cli.action != 'deploy' || (S.cli.context != 'function' && S.cli.context != 'dash'))
                 return;
 
             var functionAlertSettings = _this._getFunctionsAlertSettings(evt, region);
@@ -87,13 +88,13 @@ module.exports = function(SPlugin) {
                 });
             }.bind(_this))
             .catch(function(e){
-                console.log('wow an error !', e)
+                SCli.log('error in creating alerts', e)
             });
         }
 
         /**
          * creates alerts for the function
-         * 
+         *
          * @param array functionAlertSettings List of settings for each deployed function
          * @param object _this as this function returns an array, i can not use _createAlerts(a,b).bind(_this) to attach a pointer to _this
          *
@@ -117,7 +118,7 @@ module.exports = function(SPlugin) {
                         alertContent.Arn,
                         alertContent.notificationTopicStageMapping,
                         _this.stage
-                    );            
+                    );
 
                     var functionName = _this._getFunctionNameByArn(alertContent.Arn, _this.stage);
 
@@ -159,7 +160,7 @@ module.exports = function(SPlugin) {
                         topicList[topicName] = topicName;
                     }
                 }
-                
+
                 for (var i in this.topics) {
                     if (!topicList[i]) {
                         console.log('topic ' + i + ' does not exist. it will be created now');
@@ -175,7 +176,7 @@ module.exports = function(SPlugin) {
                     } else {
                         console.log('topic ' + i + ' exists.');
                     }
-                }                
+                }
             }.bind(this));
         }
 
@@ -191,27 +192,27 @@ module.exports = function(SPlugin) {
 
             _this.cloudWatch = new AWS.CloudWatch({
                 region: region,
-                accessKeyId: this.S.config.awsAdminKeyId,
-                secretAccessKey: this.S.config.awsAdminSecretKey
+                accessKeyId: S.config.awsAdminKeyId,
+                secretAccessKey: S.config.awsAdminSecretKey
             });
 
             _this.sns = new AWS.SNS({
                 region: region,
-                accessKeyId: this.S.config.awsAdminKeyId,
-                secretAccessKey: this.S.config.awsAdminSecretKey
+                accessKeyId: S.config.awsAdminKeyId,
+                secretAccessKey: S.config.awsAdminSecretKey
             });
 
             BbPromise.promisifyAll(_this.cloudWatch);
             BbPromise.promisifyAll(_this.sns);
         }
 
-        /** 
+        /**
          * finds the topics for the function
-         * 
+         *
          * @param array functionAlertSettings
          *
          * @return array
-         */ 
+         */
         _getRequiredTopics(functionAlertSettings) {
             let _this = this;
             var topics = [];
@@ -225,7 +226,7 @@ module.exports = function(SPlugin) {
                     // only if there is a sns topic
                     if (!alertContent.notificationTopicStageMapping[_this.stage]) {
                         continue;
-                    }            
+                    }
 
                     topics[alertContent.notificationTopicStageMapping[_this.stage]] = alertContent.notificationTopicStageMapping[_this.stage];
                 }
@@ -247,7 +248,8 @@ module.exports = function(SPlugin) {
             var settings = [];
             for (var deployedIndex in evt.data.deployed[region]) {
                 let deployed = evt.data.deployed[region][deployedIndex],
-                    alertPathFile = _this.S.config.projectPath + '/' + deployed.sPath + '/alerting.json';
+                    functionName = deployed['functionName'],
+                    alertPathFile = S.config.projectPath + '/' + functionName + '/alerting.json';
 
                 if (!fs.existsSync(alertPathFile)) {
                     continue;
@@ -268,7 +270,7 @@ module.exports = function(SPlugin) {
                 } catch (e) {
                     console.log('alerting.json not readable');
                     continue;
-                }            
+                }
             }
 
             return settings;
