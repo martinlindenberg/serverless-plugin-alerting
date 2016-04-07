@@ -5,7 +5,7 @@ Serverless Plugin ALERTING
 
 This Plugin adds Cloudwatch Alarms with SNS notifications for your Lambda functions.
 
-*Note*: This plugin supports Serverless 0.4.* 
+*Note*: This plugin supports Serverless 0.5.* 
 (Please use previous releases for other sls-versions)
 
 
@@ -15,7 +15,8 @@ This Plugin adds Cloudwatch Alarms with SNS notifications for your Lambda functi
  - @see http://docs.aws.amazon.com/cli/latest/userguide/installing.html
  - @see http://www.serverless.com/
 
- - install this plugin to your projects node_modules folder
+ - install this plugin to your project
+ - (adds the plugin to your node_modules folder)
 
 ```
 cd projectfolder
