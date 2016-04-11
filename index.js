@@ -252,7 +252,7 @@ module.exports = function(S) {
             for (var deployedIndex in evt.data.deployed[region]) {
                 let deployed = evt.data.deployed[region][deployedIndex],
                     functionName = deployed['functionName'],
-                    alertPathFile = S.config.projectPath + '/' + functionName + '/alerting.json';
+                    alertPathFile = S.getProject().getFunction(functionName).getFilePath().replace('s-function.json', 'alerting.json');
 
                 if (!fs.existsSync(alertPathFile)) {
                     continue;
