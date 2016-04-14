@@ -196,13 +196,15 @@ module.exports = function(S) {
             _this.cloudWatch = new AWS.CloudWatch({
                 region: region,
                 accessKeyId: credentials.accessKeyId,
-                secretAccessKey: credentials.secretAccessKey
+                secretAccessKey: credentials.secretAccessKey,
+                sessionToken: credentials.sessionToken
             });
 
             _this.sns = new AWS.SNS({
                 region: region,
                 accessKeyId: credentials.accessKeyId,
-                secretAccessKey: credentials.secretAccessKey
+                secretAccessKey: credentials.secretAccessKey,
+                sessionToken: credentials.sessionToken
             });
 
             BbPromise.promisifyAll(_this.cloudWatch);
