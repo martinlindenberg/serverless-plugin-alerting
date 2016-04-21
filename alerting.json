@@ -18,6 +18,14 @@ sed_memory_label1,used_memory_label2,used_memory_label3,used_memory,used_memory_
                 ]
             }
         },
+        "subscriptionFilters": {
+            "example": {
+                "filterName": "myexamplefilter",
+                "filterPattern": "",
+                "destinationArn": "arn:aws:logs:us-east-1:01234567890:destination:foo",
+                "roleArn": null
+            }
+        },
         "alerts": {
             "Duration": {
                 "enabled": true,
