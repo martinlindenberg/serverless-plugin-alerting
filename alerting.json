@@ -6,6 +6,18 @@
             "staging": "your-staging-sns-topic",
             "live": "your-live-sns-topic"
         },
+        "metricFilters": {
+            "usedMemory": {
+                "filterPattern": "[line_type=\"REPORT\",request_id_label,request_id,duration_label,duration,duration_ms,billed_duration_label1,billed_duration_label2,billed_duration,billed_duration_ms,allocated_memory_label1,allocated_memory_label2,allocated_memory,allocated_memory_mb,u
+sed_memory_label1,used_memory_label2,used_memory_label3,used_memory,used_memory_mb]",
+                "metricTransformations": [
+                    {
+                        "metricName": "usedMemory",
+                        "metricValue": "$used_memory"
+                    }
+                ]
+            }
+        },
         "alerts": {
             "Duration": {
                 "enabled": true,
