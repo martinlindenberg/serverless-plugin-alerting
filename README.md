@@ -45,6 +45,8 @@ npm install serverless-plugin-alerting
 #### Structure
  - array of alerting definition objects (previous version: single alerting definition object still works)
  - you can add multiple alerts as an array of alerting-objects
+ - you can add multiple mertic filters as in array of metricfilter-objects
+ - you can add multiple subscription filters as in array of subscritionfilter-objects
  - use-case:
     - alert1: submit normal notifications immediately to instant messenger (Example: Threshold: Errors >= 1 for 1 minute)
     - alert2: submit notification to statuspage of your service to notify the customers about a problem (Example: Threshold: Duration >= 500 for 5 minutes)
@@ -55,10 +57,14 @@ npm install serverless-plugin-alerting
 [
     {
         "notificationTopicStageMapping": { ... },
+        "metricFilters":  { ... },
+        "subscriptionFilters": { ... },
         "alerts": { ... }
     },
     {
         "notificationTopicStageMapping": { ... },
+        "metricFilters":  { ... },
+        "subscriptionFilters": { ... },
         "alerts": { ... }
     }
 ]
@@ -75,6 +81,16 @@ npm install serverless-plugin-alerting
     - If you want to react on these alarms you can subscribe Lambda-Functions to these Topics
     (For example Push a notification to a messaging system like slack, send a email or push data to any Rest-Api.)
     - @see https://github.com/martinlindenberg/serverless-plugin-sns :)
+
+#### Metric Filters
+ - key: name of the metric filter that needs to be created
+ - the values were used to fill up a aws-cli command
+ - http://docs.aws.amazon.com/cli/latest/reference/logs/put-metric-filter.html
+
+#### Subscription Filters
+ - key: name of the subscription filter that needs to be created
+ - the values were used to fill up a aws-cli command
+ - http://docs.aws.amazon.com/cli/latest/reference/logs/put-subscription-filter.html
 
 #### Alerts
 

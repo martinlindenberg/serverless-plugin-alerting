@@ -22,6 +22,7 @@ module.exports = function(S) {
                 action: 'functionDeploy',
                 event:  'post'
             });
+
             S.addHook(this._addAlertsAfterDeploy.bind(this), {
                 action: 'dashDeploy',
                 event:  'post'
@@ -81,12 +82,25 @@ module.exports = function(S) {
                 // topics exist now
                 let _this = this;
 
+                var metricFilterPromises = _this._createMetricFilters(functionAlertSettings, _this)
+                var subscriptionFilterPromises = _this._createSubscriptionFilters(functionAlertSettings, _this);
                 var alertPromises = _this._createAlerts(functionAlertSettings, _this);
+
+                BbPromise.all(metricFilterPromises)
+                .then(function(){
+                    console.log('metric filters created');
+                });
+
+                BbPromise.all(subscriptionFilterPromises)
+                .then(function(){
+                    console.log('subscription filters created');
+                });
 
                 BbPromise.all(alertPromises)
                 .then(function(){
                     console.log('alerts created');
                 });
+
             }.bind(_this))
             .catch(function(e){
                 SCli.log('error in creating alerts', e)
@@ -137,6 +151,80 @@ module.exports = function(S) {
             }
 
             return alertActions;
+        }
+
+        /**
+         * creates metric filters for the function
+         *
+         * @param array functionAlertSettings List of settings for each deployed function
+         * @param object _this as this function returns an array, i can not use _createMetricFilters(a,b).bind(_this) to attach a pointer to _this
+         *
+         * @return array
+         */
+        _createMetricFilters (functionAlertSettings, _this) {
+
+            var metricFilterActions = [];
+
+            for (var i in functionAlertSettings) {
+                var alertContents = functionAlertSettings[i];
+                for (var j in alertContents) {
+                    var alertContent = alertContents[j];
+                    if (!alertContent.metricFilters) {
+                        console.log('no metric filters defined');
+                        return [];
+                    }
+                    var functionName = _this._getFunctionNameByArn(alertContent.Arn, _this.stage);
+                    var logGroupName = '/aws/lambda/' + functionName;
+
+                    for (var metricfilter in alertContent.metricFilters) {
+                        alertContent.metricFilters[metricfilter].filterName = logGroupName + '_' + metricfilter;
+                        alertContent.metricFilters[metricfilter].logGroupName = logGroupName;
+                        alertContent.metricFilters[metricfilter].metricTransformations.forEach(function (transformation, index) {
+                            if(!transformation.metricNamespace) {
+                                transformation.metricNamespace = functionName;
+                            }
+                        });
+                        metricFilterActions.push(
+                                _this.cloudWatchLogs.putMetricFilterAsync(alertContent.metricFilters[metricfilter])
+                        );
+                    }
+                }
+            }
+            return metricFilterActions;
+        }
+
+        /**
+         * creates subscription filters for the function
+         *
+         * @param array functionAlertSettings List of settings for each deployed function
+         * @param object _this as this function returns an array, i can not use _createsubscriptionFilters(a,b).bind(_this) to attach a pointer to _this
+         *
+         * @return array
+         */
+        _createSubscriptionFilters (functionAlertSettings, _this) {
+            var subscriptionFilterActions = [];
+
+            for (var i in functionAlertSettings) {
+                var alertContents = functionAlertSettings[i];
+                for (var j in alertContents) {
+                    var alertContent = alertContents[j];
+                    if (!alertContent.metricFilters) {
+                        console.log('no subscription filters defined');
+                        return [];
+                    }
+                    var functionName = _this._getFunctionNameByArn(alertContent.Arn, _this.stage);
+                    var logGroupName = '/aws/lambda/' + functionName;
+
+                    for (var subscriptionFilter in alertContent.subscriptionFilters) {
+                        alertContent.subscriptionFilters[subscriptionFilter].filterName = subscriptionFilter;
+                        alertContent.subscriptionFilters[subscriptionFilter].logGroupName = logGroupName;
+                        subscriptionFilterActions.push(
+                                _this.cloudWatchLogs.putSubscriptionFilterAsync(alertContent.subscriptionFilters[subscriptionFilter])
+                        );
+                    }
+                }
+            }
+            return subscriptionFilterActions;
         }
 
         /**
@@ -200,6 +288,13 @@ module.exports = function(S) {
                 sessionToken: credentials.sessionToken
             });
 
+            _this.cloudWatchLogs = new AWS.CloudWatchLogs({
+                region: region,
+                accessKeyId: credentials.accessKeyId,
+                secretAccessKey: credentials.secretAccessKey,
+                sessionToken: credentials.sessionToken
+            });
+
             _this.sns = new AWS.SNS({
                 region: region,
                 accessKeyId: credentials.accessKeyId,
@@ -208,6 +303,7 @@ module.exports = function(S) {
             });
 
             BbPromise.promisifyAll(_this.cloudWatch);
+            BbPromise.promisifyAll(_this.cloudWatchLogs);
             BbPromise.promisifyAll(_this.sns);
         }
 
