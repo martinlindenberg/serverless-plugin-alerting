@@ -40,14 +40,14 @@ npm install serverless-plugin-alerting
  - the plugin uses a hook that is called after each deployment of a function 
  - you only have to deploy your function as usual `sls function deploy`
 
-#### Singe configuration for all functions
+#### Singe configuration for all functions (global-alerting.json)
     
  - copy the file global-alerting.json into your projects root folder
  - the provided alerts will be created for every deployed function automatically
  - same structure as alerting.json
  - these alerts were appended to the alerts defined in alerting.json 
 
-#### Special configuration for every function 
+#### Special configuration for every function (alerting.json)
 
  - copy the file alerting.json into your functions folder
  - these alerts were appended to the alerts defined in global-alerting.json
