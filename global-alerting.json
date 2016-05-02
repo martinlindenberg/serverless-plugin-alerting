@@ -1,0 +1,22 @@
+[
+    {
+        "notificationTopicStageMapping": {
+            "dev": "your-dev-sns-topic",
+            "testing": "your-testing-sns-topic",
+            "staging": "your-staging-sns-topic",
+            "live": "your-live-sns-topic"
+        },
+        "alerts": {
+            "Throttles": {
+                "enabled": true,
+                "alarmNamespace": "AWS/Lambda",
+                "description": "(Global) Alarm if function has more than 50 throttled requests",
+                "alarmStatisticType": "Sum",
+                "alarmPeriod": "60",
+                "alarmThreshold": "50",
+                "comparisonOperator": "GreaterThanOrEqualToThreshold",
+                "evaluationPeriod": "1"
+            }
+        }
+    }
+]

@@ -30,7 +30,7 @@ sed_memory_label1,used_memory_label2,used_memory_label3,used_memory,used_memory_
             "Duration": {
                 "enabled": true,
                 "alarmNamespace": "AWS/Lambda",
-                "description": "Alarm if duration of the importer is above 500ms",
+                "description": "Alarm if duration of the function is above 500ms",
                 "alarmStatisticType": "Maximum",
                 "alarmPeriod": "60",
                 "alarmThreshold": "500",

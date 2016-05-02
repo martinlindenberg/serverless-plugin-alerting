@@ -32,18 +32,29 @@ npm install serverless-plugin-alerting
 ```
 
  - place the alerting.json file next to your s-function.json in the directory of the function for which you want to configure alerting
+ - *AND/OR* place a global-alerting.json file next to your s-project.json file in the projects root folder
  - feel free to modify it as required
 
 ### Run the Plugin
 
  - the plugin uses a hook that is called after each deployment of a function 
  - you only have to deploy your function as usual `sls function deploy`
- - it searches in the function folder for the alerting.json file and adds the configured alerts
 
-### alerting.json
+#### Singe configuration for all functions
+    
+ - copy the file global-alerting.json into your projects root folder
+ - the provided alerts will be created for every deployed function automatically
+ - same structure as alerting.json
+ - these alerts were appended to the alerts defined in alerting.json 
 
-#### Structure
- - array of alerting definition objects (previous version: single alerting definition object still works)
+#### Special configuration for every function 
+
+ - copy the file alerting.json into your functions folder
+ - these alerts were appended to the alerts defined in global-alerting.json
+
+### Structure
+
+ - array of alerting definition objects
  - you can add multiple alerts as an array of alerting-objects
  - you can add multiple mertic filters as in array of metricfilter-objects
  - you can add multiple subscription filters as in array of subscritionfilter-objects
@@ -83,11 +94,13 @@ npm install serverless-plugin-alerting
     - @see https://github.com/martinlindenberg/serverless-plugin-sns :)
 
 #### Metric Filters
+
  - key: name of the metric filter that needs to be created
  - the values were used to fill up a aws-cli command
  - http://docs.aws.amazon.com/cli/latest/reference/logs/put-metric-filter.html
 
 #### Subscription Filters
+
  - key: name of the subscription filter that needs to be created
  - the values were used to fill up a aws-cli command
  - http://docs.aws.amazon.com/cli/latest/reference/logs/put-subscription-filter.html

@@ -61,48 +61,58 @@ module.exports = function(S) {
         _manageAlerts (evt, region) {
             let _this = this;
 
-
             _this.stage = evt.options.stage;
             _this._initAws(region);
 
             if (S.cli.action != 'deploy' || (S.cli.context != 'function' && S.cli.context != 'dash'))
                 return;
 
-            var functionAlertSettings = _this._getFunctionsAlertSettings(evt, region);
+            // merges global and local alertsettings
+            var alertSettings = _this._mergeAlertSettings([
+                _this._getFunctionsAlertSettings(evt, region),
+                _this._getProjectAlertSettings(evt, region),
+            ]);
 
-            // no alert.json found
-            if (functionAlertSettings.length == 0) {
+            // no settings found
+            if (alertSettings.length == 0) {
                 return;
             }
 
-            var requiredTopics = _this._getRequiredTopics(functionAlertSettings);
+            var requiredTopics = _this._getRequiredTopics(alertSettings);
 
             return _this._createTopics(requiredTopics)
             .then(function(){
                 // topics exist now
                 let _this = this;
 
-                var metricFilterPromises = _this._createMetricFilters(functionAlertSettings, _this)
-                var subscriptionFilterPromises = _this._createSubscriptionFilters(functionAlertSettings, _this);
-                var alertPromises = _this._createAlerts(functionAlertSettings, _this);
+                var metricFilterPromises = _this._createMetricFilters(alertSettings, _this)
+                var subscriptionFilterPromises = _this._createSubscriptionFilters(alertSettings, _this);
+                var alertPromises = _this._createAlerts(alertSettings, _this);
 
-                BbPromise.all(metricFilterPromises)
-                .then(function(){
-                    console.log('metric filters created');
-                });
-
-                BbPromise.all(subscriptionFilterPromises)
-                .then(function(){
-                    console.log('subscription filters created');
-                });
-
-                BbPromise.all(alertPromises)
-                .then(function(){
-                    console.log('alerts created');
-                });
+                if (metricFilterPromises.length > 0) {
+                    BbPromise.all(metricFilterPromises)
+                    .then(function(){
+                        console.log('metric filters created');
+                    });
+                }
+    
+                if (subscriptionFilterPromises.length > 0) {
+                    BbPromise.all(subscriptionFilterPromises)
+                    .then(function(){
+                        console.log('subscription filters created');
+                    });
+                }
+                
+                if(alertPromises.length > 0) {
+                    BbPromise.all(alertPromises)
+                    .then(function(){
+                        console.log('alerts created');
+                    });
+                }
 
             }.bind(_this))
             .catch(function(e){
+                console.log('e', e)
                 SCli.log('error in creating alerts', e)
             });
         }
@@ -336,6 +346,25 @@ module.exports = function(S) {
             return topics;
         }
 
+        /** 
+         * receives a list of settings and merges them (AND-Connected)
+         *
+         * @param array settingsList
+         *
+         * @return array
+         */
+        _mergeAlertSettings(settingsList){
+            var result = [];
+
+            for (var i in settingsList) {
+                for (var j in settingsList[i]) {
+                    result.push(settingsList[i][j]);
+                }
+            }
+
+            return result;
+        }
+
         /**
          * parses the alert json file and returns the data
          *
@@ -347,8 +376,9 @@ module.exports = function(S) {
         _getFunctionsAlertSettings(evt, region){
             let _this = this;
             var settings = [];
+
             for (var deployedIndex in evt.data.deployed[region]) {
-                let deployed = evt.data.deployed[region][deployedIndex],
+                var deployed = evt.data.deployed[region][deployedIndex],
                     functionName = deployed['functionName'],
                     alertPathFile = S.getProject().getFunction(functionName).getFilePath().replace('s-function.json', 'alerting.json');
 
@@ -372,6 +402,46 @@ module.exports = function(S) {
                     console.log('alerting.json not readable');
                     continue;
                 }
+            }
+
+            return settings;
+        }
+
+        /**
+         * parses the global alert josn file and returns data
+         *
+         * @param object evt
+         * @param string region
+         *
+         * @return array
+         */
+        _getProjectAlertSettings(evt, region){
+            let _this = this;
+            var settings = [];
+
+            var globalAlertFile = S.getProject().getRootPath('global-alerting.json');
+
+            if (!fs.existsSync(globalAlertFile)) {
+                return settings;
+            }
+            try {
+                // each deployed function receives its alert settings
+                for (var deployedIndex in evt.data.deployed[region]) {
+                    var deployed = evt.data.deployed[region][deployedIndex];
+                    var alertContents = JSON.parse(fs.readFileSync(globalAlertFile));
+
+                    if (!alertContents.length > 0) {
+                        alertContents = [alertContents];
+                    }
+
+                    for (var i in alertContents) {
+                        alertContents[i].Arn = deployed.Arn;
+                    }
+
+                    settings.push(alertContents);
+                }
+            } catch (e) {
+                console.log('global-alerting.json not readable');
             }
 
             return settings;
@@ -415,7 +485,7 @@ module.exports = function(S) {
         _getAlarmConfig(functionName, metric, alertConfig, stage, topicName, notificationAction) {
             let resourceName = functionName + ":" + stage;
 
-            return {
+            var config = {
                 AlarmName: resourceName + ' ' + metric + ' -> ' + topicName,
                 ComparisonOperator: alertConfig.comparisonOperator,
                 EvaluationPeriods: alertConfig.evaluationPeriod,
@@ -433,6 +503,8 @@ module.exports = function(S) {
                 OKActions: [notificationAction],
                 AlarmActions: [notificationAction]
             };
+
+            return config;
         }
     }
 
