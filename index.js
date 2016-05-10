@@ -95,14 +95,14 @@ module.exports = function(S) {
                         console.log('metric filters created');
                     });
                 }
-    
+
                 if (subscriptionFilterPromises.length > 0) {
                     BbPromise.all(subscriptionFilterPromises)
                     .then(function(){
                         console.log('subscription filters created');
                     });
                 }
-                
+
                 if(alertPromises.length > 0) {
                     BbPromise.all(alertPromises)
                     .then(function(){
@@ -128,6 +128,7 @@ module.exports = function(S) {
         _createAlerts (functionAlertSettings, _this) {
 
             var alertActions = [];
+            var alertNamesProcessed = [];
 
             for (var i in functionAlertSettings) {
                 var alertContents = functionAlertSettings[i];
@@ -150,12 +151,15 @@ module.exports = function(S) {
 
                     for (var metricname in alertContent.alerts) {
                         var topicName = alertContent.notificationTopicStageMapping[_this.stage];
+                        var alertConfig = _this._getAlarmConfig(functionName, metricname, alertContent.alerts[metricname], _this.stage, topicName, notificationAction);
 
-                        alertActions.push(
-                            _this.cloudWatch.putMetricAlarmAsync(
-                                _this._getAlarmConfig(functionName, metricname, alertContent.alerts[metricname], _this.stage, topicName, notificationAction)
-                            )
-                        );
+                        if (alertNamesProcessed.indexOf(alertConfig.AlarmName) === -1) {
+                            alertNamesProcessed.push(alertConfig.AlarmName);
+                            alertActions.push(
+                                _this.cloudWatch.putMetricAlarmAsync(alertConfig)
+                            );
+                        } else
+                            console.log('skipping \''+alertConfig.AlarmName+'\', alerting.json has overriding settings.')
                     }
                 }
             }
@@ -346,7 +350,7 @@ module.exports = function(S) {
             return topics;
         }
 
-        /** 
+        /**
          * receives a list of settings and merges them (AND-Connected)
          *
          * @param array settingsList
@@ -487,6 +491,7 @@ module.exports = function(S) {
 
             var config = {
                 AlarmName: resourceName + ' ' + metric + ' -> ' + topicName,
+                ActionsEnabled: alertConfig.enabled || true,
                 ComparisonOperator: alertConfig.comparisonOperator,
                 EvaluationPeriods: alertConfig.evaluationPeriod,
                 MetricName: metric,
