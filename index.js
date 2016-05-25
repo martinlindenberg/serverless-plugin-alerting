@@ -4,6 +4,7 @@ module.exports = function(S) {
 
     const AWS      = require('aws-sdk'),
         SCli       = require(S.getServerlessPath('utils/cli')),
+        SUtils     = require(S.getServerlessPath('utils')),
         fs         = require('fs'),
         BbPromise  = require('bluebird'); // Serverless uses Bluebird Promises and we recommend you do to because they provide more than your average Promise :)
 
@@ -408,7 +409,7 @@ module.exports = function(S) {
                 }
             }
 
-            return settings;
+            return SUtils.populate(S.getProject(), {}, settings, evt.options.stage, region);
         }
 
         /**
@@ -448,7 +449,7 @@ module.exports = function(S) {
                 console.log('global-alerting.json not readable');
             }
 
-            return settings;
+            return SUtils.populate(S.getProject(), {}, settings, evt.options.stage, region);
         }
 
 
@@ -488,22 +489,28 @@ module.exports = function(S) {
          */
         _getAlarmConfig(functionName, metric, alertConfig, stage, topicName, notificationAction) {
             let resourceName = functionName + ":" + stage;
-
+            let metricName = metric;
+            if('metricName' in alertConfig) {
+                metricName = alertConfig.metricName;
+            }
+            let dimensions = [{ Name: "Resource", Value: resourceName },
+                              { Name: "FunctionName", Value: functionName }
+                             ];
+            if('dimensions' in alertConfig) {
+                dimensions = alertConfig.dimensions;
+            }
             var config = {
                 AlarmName: resourceName + ' ' + metric + ' -> ' + topicName,
                 ActionsEnabled: alertConfig.enabled || true,
                 ComparisonOperator: alertConfig.comparisonOperator,
                 EvaluationPeriods: alertConfig.evaluationPeriod,
-                MetricName: metric,
+                MetricName: metricName,
                 Namespace: alertConfig.alarmNamespace,
                 Period: alertConfig.alarmPeriod,
                 Statistic: alertConfig.alarmStatisticType,
                 Threshold: alertConfig.alarmThreshold,
                 AlarmDescription: alertConfig.description,
-                Dimensions: [
-                    { Name: "Resource", Value: resourceName },
-                    { Name: "FunctionName", Value: functionName }
-                ],
+                Dimensions: dimensions,
                 InsufficientDataActions: [notificationAction],
                 OKActions: [notificationAction],
                 AlarmActions: [notificationAction]
