@@ -5,7 +5,7 @@ Serverless Plugin ALERTING
 
 This Plugin adds Cloudwatch Alarms with SNS notifications for your Lambda functions.
 
-*Note*: This plugin supports Serverless 0.5.* 
+*Note*: This plugin supports Serverless 0.5.*
 (Please use previous releases for other sls-versions)
 
 
@@ -37,15 +37,15 @@ npm install serverless-plugin-alerting
 
 ### Run the Plugin
 
- - the plugin uses a hook that is called after each deployment of a function 
+ - the plugin uses a hook that is called after each deployment of a function
  - you only have to deploy your function as usual `sls function deploy`
 
 #### Singe configuration for all functions (global-alerting.json)
-    
+
  - copy the file global-alerting.json into your projects root folder
  - the provided alerts will be created for every deployed function automatically
  - same structure as alerting.json
- - these alerts were appended to the alerts defined in alerting.json 
+ - these alerts were appended to the alerts defined in alerting.json
 
 #### Special configuration for every function (alerting.json)
 
@@ -110,3 +110,27 @@ npm install serverless-plugin-alerting
  - key: name of the metric that needs to be checked
  - the values were used to fill up a aws-cli command
  - http://docs.aws.amazon.com/cli/latest/reference/cloudwatch/put-metric-alarm.html
+ - 0.5.8: you can define your own MetricName and Dimensions
+
+```
+[
+    {
+        ...
+        "alerts": {
+            "Duration": {
+                ...
+                "metricName": "myOwnMetricName",
+                "dimensions": [
+                    {
+                        Name: "Resource", Value: "myResourceName"
+                    },
+                    {
+                        Name: "FunctionName", Value: "myFunctionName"
+                    }
+                ]
+            }
+        }
+        ...
+    }
+]
+```
