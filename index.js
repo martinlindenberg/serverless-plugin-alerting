@@ -223,7 +223,7 @@ module.exports = function(S) {
                 var alertContents = functionAlertSettings[i];
                 for (var j in alertContents) {
                     var alertContent = alertContents[j];
-                    if (!alertContent.metricFilters) {
+                    if (!alertContent.subscriptionFilters) {
                         console.log('no subscription filters defined');
                         return [];
                     }
