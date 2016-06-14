@@ -84,7 +84,18 @@ npm install serverless-plugin-alerting
 #### Notification-Topics
 
  - Here you have to define a mapping between a staging environment name and a SNS Topic that receives Messages
- - make sure that the staging environment exists: `sls env list`
+ - make sure that the staging environment exists: `sls variables list`
+    - Serverless shows you all stages to show the variables from
+    - select one stage and press enter or press ctrl + c (the output of this function is not important now)
+    
+```
+Serverless: Select a stage: 
+  1) dev
+  2) live
+> 3) staging
+  4) testing
+```
+    
  - create the stages, if required: `sls stage create`
  - The mapped SNS Topics will be created automatically if they don't exist
  - What to do next:
