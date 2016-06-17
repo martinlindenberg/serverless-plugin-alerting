@@ -87,17 +87,18 @@ npm install serverless-plugin-alerting
  - make sure that the staging environment exists: `sls variables list`
     - Serverless shows you all stages to show the variables from
     - select one stage and press enter or press ctrl + c (the output of this function is not important now)
-    
+
 ```
-Serverless: Select a stage: 
+Serverless: Select a stage:
   1) dev
   2) live
 > 3) staging
   4) testing
 ```
-    
+
  - create the stages, if required: `sls stage create`
  - The mapped SNS Topics will be created automatically if they don't exist
+ - *NEW 0.5.10*: You can now use global SNS-Topics that receive events from multiple Accounts: Enter the full ARN if you use another accounts SNS-Topics
  - What to do next:
     - As soon as these alerts have been created, they automatically submit notifications to these SNS-Topics
     - If you want to react on these alarms you can subscribe Lambda-Functions to these Topics

@@ -4,7 +4,7 @@
             "development": "your-dev-sns-topic",
             "testing": "your-testing-sns-topic",
             "staging": "your-staging-sns-topic",
-            "live": "your-live-sns-topic"
+            "live": "arn:aws:sns:eu-west-1:123456789012:another-accounts-live-sns-topic"
         },
         "metricFilters": {
             "usedMemory": {

@@ -152,6 +152,11 @@ module.exports = function(S) {
 
                     for (var metricname in alertContent.alerts) {
                         var topicName = alertContent.notificationTopicStageMapping[_this.stage];
+                        if (topicName.indexOf('arn:aws:sns:') >= 0) {
+                            var parts = topicName.split(':');
+                            topicName = parts[parts.length - 1];
+                        }
+
                         var alertConfig = _this._getAlarmConfig(functionName, metricname, alertContent.alerts[metricname], _this.stage, topicName, notificationAction);
 
                         if (alertNamesProcessed.indexOf(alertConfig.AlarmName) === -1) {
@@ -344,7 +349,14 @@ module.exports = function(S) {
                         continue;
                     }
 
-                    topics[alertContent.notificationTopicStageMapping[_this.stage]] = alertContent.notificationTopicStageMapping[_this.stage];
+                    var topicName = alertContent.notificationTopicStageMapping[_this.stage];
+
+                    // ignore existing topics
+                    if (topicName.indexOf('arn:aws:sns:') >= 0) {
+                        continue;
+                    }
+
+                    topics[topicName] = topicName;
                 }
             }
 
@@ -471,8 +483,13 @@ module.exports = function(S) {
          * @param void
          */
         _getNotificationActionByArn(arn, map, stage) {
+            var actionName = map[stage];
+            if (actionName.indexOf('arn:aws:sns:') >= 0) {
+                return actionName;
+            }
+
             var name = arn.split(':function:')[0].replace(':lambda:', ':sns:');
-            return name + ':' + map[stage];
+            return name + ':' + actionName;
         }
 
         /**
