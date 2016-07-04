@@ -527,11 +527,21 @@ module.exports = function(S) {
                 Statistic: alertConfig.alarmStatisticType,
                 Threshold: alertConfig.alarmThreshold,
                 AlarmDescription: alertConfig.description,
-                Dimensions: dimensions,
-                InsufficientDataActions: [notificationAction],
-                OKActions: [notificationAction],
-                AlarmActions: [notificationAction]
+                Dimensions: dimensions
             };
+
+            if (!('assignedActions' in alertConfig)) {
+                alertConfig['assignedActions'] = [
+                    'InsufficientData',
+                    'OK',
+                    'Alarm'
+                ];
+            }
+
+            for (var i in alertConfig['assignedActions']) {
+                var key = alertConfig['assignedActions'][i] + 'Actions';
+                config[key] = [notificationAction];
+            }
 
             return config;
         }

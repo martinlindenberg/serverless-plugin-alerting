@@ -146,3 +146,26 @@ Serverless: Select a stage:
     }
 ]
 ```
+
+- 0.5.11: per default the alarm triggers sns-events on all actions: InsufficientData, OK and Alarm
+- you can define the used actions with the following attribute
+
+```
+[
+    {
+        ...
+        "alerts": {
+            "Duration": {
+                ...
+                "assignedActions": [
+                    'InsufficientData',
+                    'OK',
+                    'Alarm'
+                ],
+                ...
+            }
+        }
+        ...
+    }
+]
+```
