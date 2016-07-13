@@ -63,6 +63,7 @@ module.exports = function(S) {
             let _this = this;
 
             _this.stage = evt.options.stage;
+            _this.region = region;
             _this._initAws(region);
 
             if (S.cli.action != 'deploy' || (S.cli.context != 'function' && S.cli.context != 'dash'))
@@ -162,8 +163,9 @@ module.exports = function(S) {
                         if (alertNamesProcessed.indexOf(alertConfig.AlarmName) === -1) {
                             alertNamesProcessed.push(alertConfig.AlarmName);
                             alertActions.push(
-                                _this.cloudWatch.putMetricAlarmAsync(alertConfig)
+                                _this.aws.request('CloudWatch', 'putMetricAlarm', alertConfig, _this.stage, _this.region)
                             );
+
                         } else
                             console.log('skipping \''+alertConfig.AlarmName+'\', alerting.json has overriding settings.')
                     }
@@ -205,7 +207,7 @@ module.exports = function(S) {
                             }
                         });
                         metricFilterActions.push(
-                                _this.cloudWatchLogs.putMetricFilterAsync(alertContent.metricFilters[metricfilter])
+                            _this.aws.request('CloudWatchLogs', 'putMetricFilter', alertContent.metricFilters[metricfilter], _this.stage, _this.region)
                         );
                     }
                 }
@@ -239,7 +241,7 @@ module.exports = function(S) {
                         alertContent.subscriptionFilters[subscriptionFilter].filterName = subscriptionFilter;
                         alertContent.subscriptionFilters[subscriptionFilter].logGroupName = logGroupName;
                         subscriptionFilterActions.push(
-                                _this.cloudWatchLogs.putSubscriptionFilterAsync(alertContent.subscriptionFilters[subscriptionFilter])
+                            _this.aws.request('CloudWatchLogs', 'putSubscriptionFilter', alertContent.subscriptionFilters[subscriptionFilter], _this.stage, _this.region)
                         );
                     }
                 }
@@ -258,7 +260,7 @@ module.exports = function(S) {
             var _this = this;
             _this.topics = topics;
 
-            return _this.sns.listTopicsAsync()
+            return _this.aws.request('SNS', 'listTopics', {}, _this.stage, _this.region)
             .then(function(topicListResult){
                 var _this = this;
                 //create fast checkable topiclist['topic1'] = 'topic1'
@@ -274,9 +276,7 @@ module.exports = function(S) {
                 for (var i in this.topics) {
                     if (!topicList[i]) {
                         console.log('topic ' + i + ' does not exist. it will be created now');
-                        _this.sns.createTopicAsync({
-                            'Name': i
-                        })
+                        _this.aws.request('SNS', 'createTopic', {'Name': i}, _this.stage, _this.region)
                         .then(function(){
                             console.log('topic created');
                         })
@@ -298,33 +298,8 @@ module.exports = function(S) {
          * @return void
          */
         _initAws (region) {
-            let _this = this,
-                credentials = S.getProvider('aws').getCredentials(_this.stage, region);
-
-            _this.cloudWatch = new AWS.CloudWatch({
-                region: region,
-                accessKeyId: credentials.accessKeyId,
-                secretAccessKey: credentials.secretAccessKey,
-                sessionToken: credentials.sessionToken
-            });
-
-            _this.cloudWatchLogs = new AWS.CloudWatchLogs({
-                region: region,
-                accessKeyId: credentials.accessKeyId,
-                secretAccessKey: credentials.secretAccessKey,
-                sessionToken: credentials.sessionToken
-            });
-
-            _this.sns = new AWS.SNS({
-                region: region,
-                accessKeyId: credentials.accessKeyId,
-                secretAccessKey: credentials.secretAccessKey,
-                sessionToken: credentials.sessionToken
-            });
-
-            BbPromise.promisifyAll(_this.cloudWatch);
-            BbPromise.promisifyAll(_this.cloudWatchLogs);
-            BbPromise.promisifyAll(_this.sns);
+            let _this = this;
+            _this.aws = S.getProvider('aws');
         }
 
         /**
