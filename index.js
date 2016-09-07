@@ -493,7 +493,7 @@ module.exports = function(S) {
             }
             var config = {
                 AlarmName: resourceName + ' ' + metric + ' -> ' + topicName,
-                ActionsEnabled: alertConfig.enabled || true,
+                ActionsEnabled: alertConfig.enabled == true ? true : false,
                 ComparisonOperator: alertConfig.comparisonOperator,
                 EvaluationPeriods: alertConfig.evaluationPeriod,
                 MetricName: metricName,
